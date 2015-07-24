@@ -16,7 +16,20 @@
     pixelDepth: true,
     nonInteraction: true,
     gaGlobal: false,
-    gtmOverride: false
+    gtmOverride: false,
+    eventNaming: {
+      category: {
+        scrollDepth: 'Scroll Depth'
+      },
+      action: {
+        percentage: 'Percentage',
+        elements: 'Elements',
+        pixelDepth: 'Pixel Depth'
+      },
+      label: {
+        baseline: 'Baseline'
+      }
+    }
   };
 
   var $window = $(window),
@@ -35,7 +48,7 @@
 
     var startTime = +new Date;
 
-    options = $.extend({}, defaults, options);
+    options = $.extend(true, {}, defaults, options);
 
     // Return early if document height is too small
     if ( $(document).height() < options.minHeight ) {
@@ -73,9 +86,9 @@
 
     if (options.percentage) {
       // Establish baseline (0% scroll)
-      sendBaseline('Percentage');
+      sendBaseline(options.eventNaming.action.percentage);
     } else if (options.elements) {
-      sendBaseline('Elements');
+      sendBaseline(options.eventNaming.action.elements);
     }
 
     /*
@@ -86,22 +99,23 @@
      * Putting this in a separate function because the Baseline event may soon be removed entirely
      */
     function sendBaseline(action, label) {
-
+      var scrollDepth = options.eventNaming.category.scrollDepth,
+          baseline = options.eventNaming.label.baseline
       if (standardEventHandler) {
 
-        standardEventHandler({'event': 'ScrollDistance', 'eventCategory': 'Scroll Depth', 'eventAction': action, 'eventLabel': 'Baseline', 'eventValue': 1, 'eventNonInteraction': true });
+        standardEventHandler({'event': 'ScrollDistance', 'eventCategory': scrollDepth, 'eventAction': action, 'eventLabel': baseline, 'eventValue': 1, 'eventNonInteraction': true });
 
       } else {
 
         if (universalGA) {
 
-          window[gaGlobal]('send', 'event', 'Scroll Depth', action, 'Baseline', 1, {'nonInteraction': true });
+          window[gaGlobal]('send', 'event', scrollDepth, action, baseline, 1, {'nonInteraction': true });
 
         }
 
         if (classicGA) {
 
-          _gaq.push(['_trackEvent', 'Scroll Depth', action, 'Baseline', 1, true]);
+          _gaq.push(['_trackEvent', scrollDepth, action, baseline, 1, true]);
 
         }
 
@@ -110,48 +124,49 @@
     }
 
     function sendEvent(action, label, scrollDistance, timing) {
-
+      var scrollDepth = options.eventNaming.category.scrollDepth,
+          pixelDepth = options.eventNaming.action.pixelDepth;
       if (standardEventHandler) {
 
-        standardEventHandler({'event': 'ScrollDistance', 'eventCategory': 'Scroll Depth', 'eventAction': action, 'eventLabel': label, 'eventValue': 1, 'eventNonInteraction': options.nonInteraction});
+        standardEventHandler({'event': 'ScrollDistance', 'eventCategory': scrollDepth, 'eventAction': action, 'eventLabel': label, 'eventValue': 1, 'eventNonInteraction': options.nonInteraction});
 
         if (options.pixelDepth && arguments.length > 2 && scrollDistance > lastPixelDepth) {
           lastPixelDepth = scrollDistance;
-          standardEventHandler({'event': 'ScrollDistance', 'eventCategory': 'Scroll Depth', 'eventAction': 'Pixel Depth', 'eventLabel': rounded(scrollDistance), 'eventValue': 1, 'eventNonInteraction': options.nonInteraction});
+          standardEventHandler({'event': 'ScrollDistance', 'eventCategory': scrollDepth, 'eventAction': pixelDepth, 'eventLabel': rounded(scrollDistance), 'eventValue': 1, 'eventNonInteraction': options.nonInteraction});
         }
 
         if (options.userTiming && arguments.length > 3) {
-          standardEventHandler({'event': 'ScrollTiming', 'eventCategory': 'Scroll Depth', 'eventAction': action, 'eventLabel': label, 'eventTiming': timing});
+          standardEventHandler({'event': 'ScrollTiming', 'eventCategory': scrollDepth, 'eventAction': action, 'eventLabel': label, 'eventTiming': timing});
         }
 
       } else {
 
         if (universalGA) {
 
-          window[gaGlobal]('send', 'event', 'Scroll Depth', action, label, 1, {'nonInteraction': options.nonInteraction});
+          window[gaGlobal]('send', 'event', scrollDepth, action, label, 1, {'nonInteraction': options.nonInteraction});
 
           if (options.pixelDepth && arguments.length > 2 && scrollDistance > lastPixelDepth) {
             lastPixelDepth = scrollDistance;
-            window[gaGlobal]('send', 'event', 'Scroll Depth', 'Pixel Depth', rounded(scrollDistance), 1, {'nonInteraction': options.nonInteraction});
+            window[gaGlobal]('send', 'event', scrollDepth, pixelDepth, rounded(scrollDistance), 1, {'nonInteraction': options.nonInteraction});
           }
 
           if (options.userTiming && arguments.length > 3) {
-            window[gaGlobal]('send', 'timing', 'Scroll Depth', action, timing, label);
+            window[gaGlobal]('send', 'timing', scrollDepth, action, timing, label);
           }
 
         }
 
         if (classicGA) {
 
-          _gaq.push(['_trackEvent', 'Scroll Depth', action, label, 1, options.nonInteraction]);
+          _gaq.push(['_trackEvent', scrollDepth, action, label, 1, options.nonInteraction]);
 
           if (options.pixelDepth && arguments.length > 2 && scrollDistance > lastPixelDepth) {
             lastPixelDepth = scrollDistance;
-            _gaq.push(['_trackEvent', 'Scroll Depth', 'Pixel Depth', rounded(scrollDistance), 1, options.nonInteraction]);
+            _gaq.push(['_trackEvent', scrollDepth, pixelDepth, rounded(scrollDistance), 1, options.nonInteraction]);
           }
 
           if (options.userTiming && arguments.length > 3) {
-            _gaq.push(['_trackTiming', 'Scroll Depth', action, timing, label, 100]);
+            _gaq.push(['_trackTiming', scrollDepth, action, timing, label, 100]);
           }
 
         }
@@ -172,19 +187,21 @@
 
     function checkMarks(marks, scrollDistance, timing) {
       // Check each active mark
+      var percentage = options.eventNaming.action.percentage;
       $.each(marks, function(key, val) {
         if ( $.inArray(key, cache) === -1 && scrollDistance >= val ) {
-          sendEvent('Percentage', key, scrollDistance, timing);
+          sendEvent(percentage, key, scrollDistance, timing);
           cache.push(key);
         }
       });
     }
 
     function checkElements(elements, scrollDistance, timing) {
+      var elementsAction = options.eventNaming.action.elements;
       $.each(elements, function(index, elem) {
         if ( $.inArray(elem, cache) === -1 && $(elem).length ) {
           if ( scrollDistance >= $(elem).offset().top ) {
-            sendEvent('Elements', elem, scrollDistance, timing);
+            sendEvent(elementsAction, elem, scrollDistance, timing);
             cache.push(elem);
           }
         }
