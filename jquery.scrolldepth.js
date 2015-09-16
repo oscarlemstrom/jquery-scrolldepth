@@ -17,6 +17,7 @@
     nonInteraction: true,
     gaGlobal: false,
     gtmOverride: false,
+    sendBaseline: true,
     eventNaming: {
       category: {
         scrollDepth: 'Scroll Depth'
@@ -99,6 +100,8 @@
      * Putting this in a separate function because the Baseline event may soon be removed entirely
      */
     function sendBaseline(action, label) {
+      if (options.sendBaseline === false) return;
+
       var scrollDepth = options.eventNaming.category.scrollDepth,
           baseline = options.eventNaming.label.baseline
       if (standardEventHandler) {
